@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class EventFiltering : MonoBehaviour
 {
-
+    private Stack<GameObject> windowsList;
     private bool IsCursorInsideRegion(GameObject obj)
     {
         Vector3 _mousePositionLocal = obj.transform.InverseTransformPoint(Camera.main.ScreenToWorldPoint(Input.mousePosition));
@@ -14,25 +15,37 @@ public class EventFiltering : MonoBehaviour
         else
             return false;
     }
-    private void Search(Transform parentTransform, ref GameObject target)
+    private void InitWindow(Transform parentTransform)
     {
         for(int i = 0; i < parentTransform.childCount; i++)
         {
             var g = parentTransform.GetChild(i);
-            if (IsCursorInsideRegion(g.gameObject))
-            {
-                target = g.gameObject;
-            }
-            Search(g, ref target);
+            windowsList.Push(g.gameObject);
+            InitWindow(g);
         }
+    }
+    private void InitWindows()
+    {
+        windowsList = new Stack<GameObject>();
+        InitWindow(transform);
+    }
+    private GameObject GetClickedObject()
+    {
+        foreach (var g in windowsList)
+            if (IsCursorInsideRegion(g)) return g;
+
+        return null;
+    }
+    private void Start()
+    {
+        InitWindows();
     }
     void Update()
     {
-        GameObject img = null;
-        Search(transform, ref img);
-        if (Input.GetKeyDown(KeyCode.Mouse0) && img != null)
+        if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            img.GetComponent<Outline>().effectColor = Color.red;
+            var clickedWindow = GetClickedObject();
+            if(clickedWindow != null) clickedWindow.GetComponent<Outline>().effectColor = Color.red;
         }
     }
 }
